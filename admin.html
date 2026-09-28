@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Wallpaper Manager</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Noto Sans,sans-serif;background:#fff7df;color:#4d240c}main{width:min(620px,94%);margin:24px auto 50px}.card{background:#fffdf5;border:2px solid #d4af37;border-radius:22px;padding:20px;box-shadow:0 10px 28px #6b420522;margin-bottom:16px}h1{margin:0 0 6px;color:#8f001a;font-size:28px}h2{font-size:20px;margin:0 0 12px;color:#8f001a}.sub{margin:0 0 18px;font-weight:700;line-height:1.5}label{display:block;font-weight:800;margin:14px 0 7px}input[type=password],input[type=text]{width:100%;padding:13px;border:1px solid #b98d39;border-radius:12px;font-size:16px;background:#fff}.row{display:flex;gap:10px;align-items:center}.row input[type=file]{width:100%}.btn{width:100%;border:0;border-radius:14px;padding:14px 16px;font-size:17px;font-weight:900;cursor:pointer}.primary{background:#8f001a;color:#fff}.secondary{background:#f4cf58;color:#5a1a0d}.muted{font-size:13px;line-height:1.5;color:#6d4a35}.status{margin-top:14px;padding:12px;border-radius:12px;display:none;font-weight:800;line-height:1.45}.ok{display:block;background:#e9f8e9;color:#145c1b}.err{display:block;background:#ffe8e8;color:#8b0015}.preview{width:100%;max-height:420px;object-fit:contain;border-radius:16px;border:2px solid #d4af37;background:#fff9d9;display:none;margin-top:12px}.security{background:#fff0c2;border-left:5px solid #d4af37;padding:12px;border-radius:10px;line-height:1.5;font-size:14px}.small{font-size:12px;color:#795b43;margin-top:6px}.links{display:flex;gap:10px;flex-wrap:wrap}.links a{color:#8f001a;font-weight:800}.check{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;margin-top:10px}.check input{width:18px;height:18px}
+</style>
+</head>
+<body>
+<main>
+<section class="card">
+<h1>🎉 Wallpaper Manager</h1>
+<p class="sub">लक्ष्मी श्रृंगार सेंटर की वेबसाइट का त्योहार वाला wallpaper बदलें।</p>
+<div class="security"><b>सुरक्षा:</b> अपना GitHub token इस पेज में केवल अस्थायी रूप से डालें। उसे इस वेबसाइट के कोड में सेव नहीं किया जाता। Token किसी को चैट में न भेजें।</div>
+
+<label for="token">GitHub Fine-grained Token</label>
+<input id="token" type="password" autocomplete="off" placeholder="github_pat_...">
+<label class="check"><input id="showToken" type="checkbox"> Token दिखाएँ</label>
+
+<label for="file">नया wallpaper चुनें</label>
+<input id="file" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
+<div class="small">JPG/PNG/WebP/GIF • बेहतर परिणाम के लिए 8 MB से कम रखें।</div>
+<img id="preview" class="preview" alt="Wallpaper preview">
+
+<button id="upload" class="btn primary" style="margin-top:16px">⬆️ Wallpaper बदलें</button>
+<div id="status" class="status"></div>
+</section>
+
+<section class="card">
+<h2>कैसे इस्तेमाल करें?</h2>
+<ol style="line-height:1.7;margin:8px 0 0;padding-left:22px">
+<li>GitHub से बनाया हुआ नया token अपने पास रखें।</li>
+<li>ऊपर token डालें।</li>
+<li>नया wallpaper चुनें।</li>
+<li><b>Wallpaper बदलें</b> दबाएँ।</li>
+<li>कुछ सेकंड बाद वेबसाइट खोलकर देखें।</li>
+</ol>
+<p class="muted">यह सिस्टम repository में केवल <b>wallpaper.jpg</b> फाइल को बदलता है। आपकी मुख्य वेबसाइट की बाकी फाइलें नहीं बदलता।</p>
+</section>
+</main>
+<script>
+const OWNER='laxmishringarphephna-svg';
+const REPO='Laxmishringarcentre-';
+const BRANCH='main';
+const PATH='wallpaper.jpg';
+const API=`https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}`;
+
+const tokenEl=document.getElementById('token');
+const fileEl=document.getElementById('file');
+const preview=document.getElementById('preview');
+const statusEl=document.getElementById('status');
+const uploadBtn=document.getElementById('upload');
+
+document.getElementById('showToken').addEventListener('change',e=>{
+  tokenEl.type=e.target.checked?'text':'password';
+});
+
+function status(msg,ok=false){
+  statusEl.textContent=msg;
+  statusEl.className='status '+(ok?'ok':'err');
+}
+
+fileEl.addEventListener('change',()=>{
+  const f=fileEl.files[0];
+  if(!f){preview.style.display='none';return;}
+  if(f.size>8*1024*1024){status('फाइल 8 MB से बड़ी है। छोटी image चुनें।');fileEl.value='';preview.style.display='none';return;}
+  const url=URL.createObjectURL(f);
+  preview.src=url; preview.style.display='block';
+});
+
+function readAsDataURL(file){
+  return new Promise((resolve,reject)=>{
+    const r=new FileReader();
+    r.onload=()=>resolve(r.result);
+    r.onerror=()=>reject(new Error('फाइल पढ़ी नहीं जा सकी।'));
+    r.readAsDataURL(file);
+  });
+}
+
+async function getCurrentFile(token){
+  const res=await fetch(API+'?ref='+encodeURIComponent(BRANCH),{
+    headers:{'Accept':'application/vnd.github+json','Authorization':'Bearer '+token,'X-GitHub-Api-Version':'2026-03-10'}
+  });
+  if(res.status===404)return null;
+  const data=await res.json();
+  if(!res.ok)throw new Error(data.message||('GitHub error '+res.status));
+  return data;
+}
+
+uploadBtn.addEventListener('click',async()=>{
+  const token=tokenEl.value.trim();
+  const file=fileEl.files[0];
+  if(!token){status('पहले GitHub token डालें।');tokenEl.focus();return;}
+  if(!file){status('पहले wallpaper image चुनें।');return;}
+  if(file.size>8*1024*1024){status('फाइल 8 MB से बड़ी है।');return;}
+  uploadBtn.disabled=true; uploadBtn.textContent='⏳ Wallpaper अपडेट हो रहा है...'; statusEl.className='status';
+  try{
+    const dataUrl=await readAsDataURL(file);
+    const base64=dataUrl.split(',')[1];
+    const current=await getCurrentFile(token);
+    const body={
+      message:'Update website wallpaper',
+      content:base64,
+      branch:BRANCH
+    };
+    if(current && current.sha)body.sha=current.sha;
+    const res=await fetch(API,{
+      method:'PUT',
+      headers:{'Accept':'application/vnd.github+json','Authorization':'Bearer '+token,'Content-Type':'application/json','X-GitHub-Api-Version':'2026-03-10'},
+      body:JSON.stringify(body)
+    });
+    const result=await res.json();
+    if(!res.ok)throw new Error(result.message||('GitHub error '+res.status));
+    status('✅ Wallpaper सफलतापूर्वक बदल दिया गया। GitHub Pages पर अपडेट आने में थोड़ा समय लग सकता है।',true);
+    tokenEl.value='';
+    fileEl.value='';
+  }catch(err){
+    status('❌ '+err.message);
+  }finally{
+    uploadBtn.disabled=false; uploadBtn.textContent='⬆️ Wallpaper बदलें';
+  }
+});
+</script>
+</body>
+</html>
